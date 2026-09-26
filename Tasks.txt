@@ -1,0 +1,108 @@
+## Adım 0: Proje İskeleti — Katmanlı Mimari
+- [x] Solution oluştur (MessagingApp.slnx & internship_MessagingApp.slnx)
+- [x] MessagingApp.Api projesi oluştur
+- [x] MessagingApp.Client projesi oluştur
+- [x] Her iki projeyi solution'a ekle
+- [x] MessagingApp.Core class library projesi oluştur → solution'a ekle
+- [x] MessagingApp.Entities class library projesi oluştur → solution'a ekle
+- [x] MessagingApp.DataAccess class library projesi oluştur → solution'a ekle
+- [x] MessagingApp.Business class library projesi oluştur → solution'a ekle
+- [x] Proje referanslarını bağla:
+       Entities→Core, DataAccess→Entities+Core, Business→DataAccess+Entities+Core, Api→Business+DataAccess+Entities+Core, Client→Entities
+- [x] NuGet paketlerini ekle:
+       Core: Microsoft.EntityFrameworkCore (10.0.4)
+       DataAccess: Microsoft.EntityFrameworkCore (10.0.4), Npgsql.EntityFrameworkCore.PostgreSQL (10.0.3), Microsoft.EntityFrameworkCore.Design (10.0.4)
+       Business: Autofac (8.2.0), Autofac.Extensions.DependencyInjection (11.0.2)
+       Api: Autofac.Extensions.DependencyInjection (11.0.2), Swashbuckle.AspNetCore (10.2.3), Microsoft.EntityFrameworkCore.Design (10.0.4)
+
+## Adım 1: Core Katmanı
+- [x] MessagingApp.Core/Entities/IEntity.cs — boş marker interface (açıklamalı yorum satırlarıyla)
+- [x] MessagingApp.Core/Entities/IDto.cs — boş marker interface (açıklamalı yorum satırlarıyla)
+- [x] MessagingApp.Core/DataAccess/IEntityRepository.cs — generic CRUD (Get, GetAll, Add, Update, Delete)
+- [x] MessagingApp.Core/DataAccess/EntityFramework/EfEntityRepositoryBase.cs — generic EF Core implementasyonu
+- [x] MessagingApp.Core/Utilities/Results/IResult.cs
+- [x] MessagingApp.Core/Utilities/Results/IDataResult.cs
+- [x] MessagingApp.Core/Utilities/Results/Result.cs
+- [x] MessagingApp.Core/Utilities/Results/DataResult.cs
+- [x] MessagingApp.Core/Utilities/Results/SuccessResult.cs
+- [x] MessagingApp.Core/Utilities/Results/ErrorResult.cs
+- [x] MessagingApp.Core/Utilities/Results/SuccessDataResult.cs
+- [x] MessagingApp.Core/Utilities/Results/ErrorDataResult.cs
+
+## Adım 2: Entities Katmanı
+- [x] MessagingApp.Entities/Concrete/Conversation.cs — IEntity implement eder (açıklamalı yorum satırlarıyla)
+- [x] MessagingApp.Entities/Concrete/Message.cs — IEntity implement eder (açıklamalı yorum satırlarıyla)
+- [x] MessagingApp.Entities/DTOs/CreateConversationRequest.cs — IDto implement eder { title }
+- [x] MessagingApp.Entities/DTOs/ConversationSummaryResponse.cs — IDto implement eder { id, title, createdAt }
+- [x] MessagingApp.Entities/DTOs/ConversationDetailResponse.cs — IDto implement eder { id, title, createdAt, messageCount, participants }
+- [x] MessagingApp.Entities/DTOs/SendMessageRequest.cs — IDto implement eder { sender, content }
+- [x] MessagingApp.Entities/DTOs/MessageResponse.cs — IDto implement eder { id, conversationId, sender, content, sentAt }
+
+## Adım 3: DataAccess Katmanı
+- [x] MessagingApp.DataAccess/Abstract/IConversationDal.cs — IEntityRepository<Conversation> extend eder + GetConversationDetail metodu
+- [x] MessagingApp.DataAccess/Abstract/IMessageDal.cs — IEntityRepository<Message> extend eder
+- [x] MessagingApp.DataAccess/Concrete/EntityFramework/AppDbContext.cs — DbContext (DbSet'ler, ilişki konfigürasyonu, Fluent API, Npgsql)
+- [x] MessagingApp.DataAccess/Concrete/EntityFramework/EfConversationDal.cs — EfEntityRepositoryBase + IConversationDal
+- [x] MessagingApp.DataAccess/Concrete/EntityFramework/EfMessageDal.cs — EfEntityRepositoryBase + IMessageDal
+- [x] MessagingApp.Api/appsettings.json'a PostgreSQL connection string eklendi
+       ("Host=localhost;Port=5432;Database=MessagingAppDb;Username=postgres;Password=postgres")
+
+## Adım 4: Business Katmanı
+- [x] MessagingApp.Business/Abstract/IConversationService.cs — dönüş tipleri IDataResult<T> / IResult (açıklamalı yorum satırlarıyla)
+- [x] MessagingApp.Business/Abstract/IMessageService.cs — dönüş tipleri IDataResult<T> / IResult (açıklamalı yorum satırlarıyla)
+- [x] MessagingApp.Business/Concrete/ConversationManager.cs — IConversationService implement, IConversationDal inject (validasyonlar ve Result pattern ile)
+- [x] MessagingApp.Business/Concrete/MessageManager.cs — IMessageService implement, IMessageDal + IConversationDal inject (validasyonlar ve Result pattern ile)
+- [x] MessagingApp.Business/DependencyResolvers/Autofac/AutofacBusinessModule.cs — IoC modül yapılandırması
+
+## Adım 5: API Katmanı
+- [x] MessagingApp.Api/Program.cs: Autofac host factory entegrasyonu (UseServiceProviderFactory + AutofacBusinessModule)
+- [x] MessagingApp.Api/Program.cs: 0.0.0.0 bind (LAN erişimi için)
+- [x] MessagingApp.Api/Controllers/ConversationsController.cs
+       POST   /api/conversations           → 201 Created
+       GET    /api/conversations           → 200 OK
+       GET    /api/conversations/{id}      → 200 OK / 404 Not Found
+       GET    /api/conversations/{id}/messages → 200 OK / 404 Not Found
+       POST   /api/conversations/{id}/messages → 201 Created / 404 / 400
+- [x] Global exception handling middleware
+- [x] Swagger/OpenAPI yapılandırması
+
+## Adım 6: EF Migration & Veritabanı
+- [x] EF Migration oluştur:
+       dotnet ef migrations add InitialCreate --project MessagingApp.DataAccess --startup-project MessagingApp.Api
+- [x] Veritabanını güncelle:
+       dotnet ef database update --project MessagingApp.DataAccess --startup-project MessagingApp.Api
+
+## Adım 7: API Test
+- [x] Swagger UI ile tüm endpoint'leri manuel test et
+- [x] Olmayan conversation ID → 404 döndüğünü doğrula
+- [x] Boş title/content/sender → 400 döndüğünü doğrula
+- [x] Uçtan uca akış: sohbet oluştur → mesaj gönder → mesajları listele
+
+## Adım 8: Console Client — API Bağlantı Katmanı
+- [x] Services/ApiClient.cs — tüm HTTP çağrılarını saran servis
+       GetConversationsAsync(), GetConversationDetailAsync(id), CreateConversationAsync(title)
+       GetMessagesAsync(conversationId), SendMessageAsync(conversationId, sender, content)
+- [x] HttpClient base URL yapılandırması
+- [x] Hata yönetimi: 404 → anlamlı mesaj, 400 → API'den gelen mesajı yansıt, bağlantı hatası → tekrar dene
+
+## Adım 9: Console Client — UI
+- [x] UI/ConversationMenu.cs, UI/ChatView.cs
+- [x] Açılışta kullanıcı adı al (boş bırakılamaz)
+- [x] Ana menü (Sohbetleri Listele / Yeni Sohbet Oluştur / Çıkış)
+- [x] Sohbet listeleme ekranı
+- [x] Yeni sohbet oluşturma akışı (boş başlık kontrolü client tarafında da)
+- [x] Chat ekranı:
+       Geçmiş mesajları göster (SentAt ascending)
+       Arka planda polling (her 2 saniyede bir), son ID tutarak sadece yeni mesajları göster
+       Kullanıcı aynı anda mesaj yazabilsin (concurrent I/O)
+       Boş mesaj engeli, 'q' ile çıkış
+
+## Adım 10: Uçtan Uca Test
+- [x] Aynı bilgisayardan iki ayrı console client, karşılıklı mesajlaşma
+- [x] Farklı bilgisayardan LAN üzerinden bağlanma
+- [x] Polling ile yeni mesajların otomatik görünmesi
+
+## Adım 11: README
+- [x] Backend README (gereksinimler, PostgreSQL kurulumu, migration, çalıştırma, LAN IP yapılandırması)
+- [x] Client README (gereksinimler, API base URL ayarı, çalıştırma komutu)
+

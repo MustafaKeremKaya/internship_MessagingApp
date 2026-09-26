@@ -1,0 +1,496 @@
+## Genel Bakış
+
+
+
+ASP.NET Web API + PostgreSQL backend ve C# Console Client kullanarak uçtan uca çalışan bir mesajlaşma sistemi geliştireceğiz.
+
+
+
+---
+
+
+
+## Teknoloji Kararları
+
+
+
+| Katman | Teknoloji | Neden |
+
+|---|---|---|
+
+| Backend Framework | ASP.NET Core Web API (.NET 8) | Modern, hızlı, cross-platform |
+
+| ORM | Entity Framework Core | Code-First migration, PostgreSQL desteği |
+
+| Veritabanı | PostgreSQL | Ödev şartı |
+
+| EF Provider | Npgsql.EntityFrameworkCore.PostgreSQL | Resmi EF Core PostgreSQL sağlayıcısı |
+
+| Console Client | C# Console App (.NET 8) | Aynı ekosistem, HTTP ile API'ye bağlanır |
+
+| HTTP Client | System.Net.Http.HttpClient | .NET built-in, ayrı kütüphane gerekmez |
+
+| JSON | System.Text.Json | .NET built-in |
+
+
+
+---
+
+
+
+## Proje Yapısı
+
+
+
+```
+
+MessagingApp/
+
+├── MessagingApp.Api/           # ASP.NET Web API projesi
+
+│   ├── Controllers/
+
+│   │   ├── ConversationsController.cs
+
+│   │   └── MessagesController.cs
+
+│   ├── Data/
+
+│   │   └── AppDbContext.cs
+
+│   ├── Entities/
+
+│   │   ├── Conversation.cs
+
+│   │   └── Message.cs
+
+│   ├── DTOs/
+
+│   │   ├── Conversations/
+
+│   │   │   ├── CreateConversationRequest.cs
+
+│   │   │   ├── ConversationSummaryResponse.cs
+
+│   │   │   └── ConversationDetailResponse.cs
+
+│   │   └── Messages/
+
+│   │       ├── SendMessageRequest.cs
+
+│   │       └── MessageResponse.cs
+
+│   ├── Services/
+
+│   │   ├── IConversationService.cs
+
+│   │   ├── ConversationService.cs
+
+│   │   ├── IMessageService.cs
+
+│   │   └── MessageService.cs
+
+│   ├── Migrations/             # EF Core migration dosyaları
+
+│   ├── appsettings.json
+
+│   └── Program.cs
+
+│
+
+├── MessagingApp.Client/        # Console client projesi
+
+│   ├── Services/
+
+│   │   └── ApiClient.cs        # HTTP isteklerini saran servis
+
+│   ├── UI/
+
+│   │   ├── ConversationMenu.cs
+
+│   │   └── ChatView.cs
+
+│   └── Program.cs
+
+│
+
+├── MessagingApp.sln            # Solution dosyası
+
+└── README.md
+
+```
+
+
+
+---
+
+
+
+## Veri Modeli
+
+
+
+### Conversation (Sohbet)
+
+```csharp
+
+public class Conversation
+
+{
+
+    public int Id { get; set; }
+
+    public string Title { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public ICollection<Message> Messages { get; set; }
+
+}
+
+```
+
+
+
+### Message (Mesaj)
+
+```csharp
+
+public class Message
+
+{
+
+    public int Id { get; set; }
+
+    public int ConversationId { get; set; }
+
+    public string Sender { get; set; }
+
+    public string Content { get; set; }
+
+    public DateTime SentAt { get; set; }
+
+    public Conversation Conversation { get; set; }
+
+}
+
+```
+
+
+
+---
+
+
+
+## API Endpoint Tasarımı (RESTful)
+
+
+
+| Method | Route | İşlev | Request Body | Response |
+
+|---|---|---|---|---|
+
+| `POST` | `/api/conversations` | Yeni sohbet oluştur | `CreateConversationRequest` | `ConversationSummaryResponse` (201) |
+
+| `GET` | `/api/conversations` | Tüm sohbetleri listele | — | `List<ConversationSummaryResponse>` (200) |
+
+| `GET` | `/api/conversations/{id}` | Sohbet detayı (mesaj sayısı, katılımcılar) | — | `ConversationDetailResponse` (200) |
+
+| `GET` | `/api/conversations/{id}/messages` | Sohbetteki mesajları listele | — | `List<MessageResponse>` (200) |
+
+| `POST` | `/api/conversations/{id}/messages` | Sohbete mesaj gönder | `SendMessageRequest` | `MessageResponse` (201) |
+
+
+
+### DTO Yapıları
+
+
+
+**CreateConversationRequest**: `{ title: string }`  
+
+**ConversationSummaryResponse**: `{ id, title, createdAt }`  
+
+**ConversationDetailResponse**: `{ id, title, createdAt, messageCount, participants: string[] }`  
+
+**SendMessageRequest**: `{ sender: string, content: string }`  
+
+**MessageResponse**: `{ id, conversationId, sender, content, sentAt }`
+
+
+
+---
+
+
+
+## Katmanlı Mimari
+
+
+
+```
+
+Controller (HTTP katmanı)
+
+    ↓ DTO
+
+Service (İş mantığı katmanı)
+
+    ↓ Entity
+
+Repository/DbContext (Veri erişim katmanı)
+
+    ↓
+
+PostgreSQL
+
+```
+
+
+
+- **Controller**: HTTP isteklerini alır, DTO dönüşümü yapmaz — servise devreder
+
+- **Service**: İş mantığı, validasyon, entity↔DTO dönüşümü
+
+- **DbContext**: EF Core ile doğrudan veritabanı işlemleri
+
+
+
+---
+
+
+
+## Console Client Akışı
+
+
+
+```
+
+Başlat
+
+  → "Adınızı girin:" [kullanıcı adı al]
+
+  
+
+Ana Menü:
+
+  1. Sohbetleri Listele
+
+  2. Yeni Sohbet Oluştur
+
+  3. Çıkış
+
+  
+
+Sohbet Seçildi → Chat Ekranı:
+
+  - Geçmiş mesajları göster
+
+  - Polling başlar (her N saniyede yeni mesaj kontrolü)
+
+  - Alt satırda: "Mesaj yaz (q=geri dön):"
+
+  - Kullanıcı yazdıktan sonra Enter'a basınca mesaj gönderilir
+
+  - Yeni mesaj gelince ekrana eklenir (ayrı thread/async)
+
+```
+
+
+
+### Polling Stratejisi
+
+- Background thread veya `Task` ile belirli aralıklarla (örn. 2 saniye) `GET /api/conversations/{id}/messages` çağrısı yapılır
+
+- Son görülen mesaj ID'si tutulur, sadece yeni olanlar ekrana yazdırılır
+
+- Kullanıcı aynı anda mesaj yazabilir (concurrent I/O yönetimi)
+
+
+
+---
+
+
+
+## Hata Yönetimi
+
+
+
+### Backend (API)
+
+- Olmayan conversation ID → `404 Not Found` + açıklayıcı mesaj
+
+- Boş title veya content → `400 Bad Request` + validation hatası
+
+- Boş sender → `400 Bad Request`
+
+- Genel exception → `500 Internal Server Error` (global exception handler)
+
+
+
+### Client
+
+- Bağlantı kurulamazsa → hata mesajı göster, tekrar dene seçeneği sun
+
+- 404 alınırsa → "Sohbet bulunamadı" mesajı
+
+- 400 alınırsa → API'den gelen validation mesajını ekrana yansıt
+
+
+
+---
+
+
+
+## Adım Adım Uygulama Planı
+
+
+
+### Adım 1: Proje İskeleti Kurulumu
+
+- Solution ve iki projeyi oluştur (`dotnet new`)
+
+- NuGet paketlerini ekle (EF Core, Npgsql, Swagger)
+
+- Solution'a her iki projeyi dahil et
+
+
+
+### Adım 2: Veritabanı & Entity Katmanı
+
+- `Conversation` ve `Message` entity'lerini yaz
+
+- `AppDbContext`'i oluştur (DbSet, ilişkiler, configuration)
+
+- `appsettings.json`'a PostgreSQL connection string ekle
+
+- EF Core migration oluştur ve veritabanını oluştur
+
+
+
+### Adım 3: DTO Katmanı
+
+- Tüm request ve response DTO'larını yaz
+
+- İsimlendirme ve alan seçimlerini netleştir
+
+
+
+### Adım 4: Service Katmanı
+
+- `IConversationService` ve `ConversationService` yaz
+
+- `IMessageService` ve `MessageService` yaz
+
+- İş mantığı: validasyon, entity↔DTO mapping, hata fırlatma
+
+
+
+### Adım 5: Controller Katmanı
+
+- `ConversationsController` yaz (tüm endpoint'ler)
+
+- `MessagesController` veya nested route olarak `ConversationsController`'a mesaj endpoint'leri ekle
+
+- Global exception handling middleware ekle
+
+- Swagger/OpenAPI yapılandır
+
+
+
+### Adım 6: API Test
+
+- Swagger UI ile tüm endpoint'leri manuel test et
+
+- Postman veya curl ile uçtan uca kontrol et
+
+
+
+### Adım 7: Console Client — API Bağlantı Katmanı
+
+- `ApiClient.cs` yaz: tüm API çağrılarını kapsar
+
+- HTTP client yapılandırması (base URL, JSON deserialization)
+
+- Hata yönetimi
+
+
+
+### Adım 8: Console Client — Kullanıcı Arayüzü
+
+- Ana menü akışı
+
+- Sohbet listeleme ekranı
+
+- Yeni sohbet oluşturma akışı
+
+- Chat ekranı (geçmiş mesajlar + polling + mesaj gönderme)
+
+
+
+### Adım 9: Uçtan Uca Test
+
+- Backend çalışırken iki ayrı console client bağlanır
+
+- İki kullanıcı aynı sohbette mesajlaşır
+
+- Polling ile mesajlar karşılıklı görünür mü kontrol et
+
+
+
+### Adım 10: README Hazırlama
+
+- Backend için: gereksinimler, kurulum, çalıştırma komutları
+
+- Client için: gereksinimler, yapılandırma, çalıştırma komutları
+
+- Local network kullanımı için IP yapılandırması
+
+
+
+---
+
+
+
+## Açık Sorular / Kararlaştırılacak Konular
+
+
+
+> [!IMPORTANT]
+
+> Aşağıdaki konularda karar vermem gerekiyor — senin tercihlerine göre ilerleyebiliriz:
+
+
+
+1. **Polling sıklığı**: 2 saniye mi, 3 saniye mi? Daha sık = daha gerçek zamanlı ama daha fazla istek.
+
+2. **Mesaj sıralama**: Mesajlar `SentAt` ascending sırayla mı gösterilsin? (mantıklı olan bu)
+
+3. **Console UI renk/format**: Sadece sade metin mi, yoksa `Console.ForegroundColor` ile renkli mi?
+
+4. **Network erişim**: Sadece localhost mu, yoksa `0.0.0.0` bind ile LAN erişimi de açık olsun mu? (ödeve göre LAN şart)
+
+5. **Migration stratejisi**: `dotnet ef migrations add InitialCreate` + `dotnet ef database update` mı, yoksa uygulama başlarken `EnsureCreated()` / `Migrate()` mi?
+
+
+
+> [!NOTE]
+
+> Ödev şartına göre LAN erişimi (iki farklı bilgisayardan bağlanma) zorunlu, bu yüzden backend `0.0.0.0` üzerinden tüm arayüzleri dinleyecek şekilde yapılandırılacak.
+
+
+
+---
+
+
+
+## Klasör Nerede Oluşturulsun?
+
+
+
+Proje şu konumda oluşturuldu:
+
+```
+
+C:\Users\Kerem\source\repos\MessagingApp\
+
+```
+

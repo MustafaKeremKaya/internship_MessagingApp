@@ -1,0 +1,105 @@
+Implementation Plan
+Staj Assignment 1: Adım 0, 1, 2 ve 3 Uygulama Planı
+Bu plan, Documentations klasöründeki AssignmentInstructions.txt, Plan.txt ve Tasks.txt dosyalarındaki gereksinimler doğrultusunda Adım 0 (Proje İskeleti), Adım 1 (Core Katmanı), Adım 2 (Entities Katmanı) ve Adım 3 (DataAccess Katmanı) aşamalarını eksiksiz, katmanlı mimariye uygun ve detaylı Türkçe yorum satırlarıyla inşa etmeyi amaçlamaktadır.
+
+Genel Mimari ve Tasarım
+
+internship_MessagingApp/
+├── Documentations/                      # Dokümantasyon dosyaları
+│   ├── AssignmentInstructions.txt
+│   ├── Plan.txt
+│   └── Tasks.txt
+│
+├── MessagingApp.Core/                  # Katmanlardan bağımsız çekirdek altyapı
+│   ├── Entities/                       # Marker interface'ler (IEntity, IDto)
+│   ├── DataAccess/                     # Generic Repository Deseni (IEntityRepository, EfEntityRepositoryBase)
+│   └── Utilities/Results/              # Standart İş Sonucu Deseni (IResult, IDataResult, Success/Error Result'lar)
+│
+├── MessagingApp.Entities/              # Veritabanı Varlıkları ve DTO'lar
+│   ├── Concrete/                       # Conversation, Message (IEntity implement eder)
+│   └── DTOs/                           # Request ve Response DTO modelleri (IDto implement eder)
+│
+├── MessagingApp.DataAccess/            # Veri Erişim Katmanı (EF Core + PostgreSQL)
+│   ├── Abstract/                       # IConversationDal, IMessageDal
+│   └── Concrete/EntityFramework/       # AppDbContext, EfConversationDal, EfMessageDal
+│
+├── MessagingApp.Business/              # İş Mantığı Katmanı (Adım 4'te doldurulacak)
+├── MessagingApp.Api/                   # ASP.NET Core Web API (Adım 5'te doldurulacak)
+└── MessagingApp.Client/                # C# Console Client (Adım 8-9'da doldurulacak)
+Yapılacak İşler
+Adım 0: Proje İskeleti ve Katmanlı Mimari Kurulumu
+Projelerin Oluşturulması (.NET 10.0):
+MessagingApp.Core (Class Library)
+MessagingApp.Entities (Class Library)
+MessagingApp.DataAccess (Class Library)
+MessagingApp.Business (Class Library)
+MessagingApp.Api (ASP.NET Core Web API)
+MessagingApp.Client (Console Application)
+Solution Yapılandırması:
+Tüm projeleri Solution'a ekleme.
+Proje Referanslarının Bağlanması:
+Entities → Core
+DataAccess → Entities, Core
+Business → DataAccess, Entities, Core
+Api → Business, Entities, DataAccess, Core
+Client → Entities
+Gerekli NuGet Paketlerinin Yüklenmesi:
+DataAccess: Microsoft.EntityFrameworkCore, Npgsql.EntityFrameworkCore.PostgreSQL, Microsoft.EntityFrameworkCore.Design
+Business: Autofac
+Api: Autofac.Extensions.DependencyInjection, Swashbuckle.AspNetCore, Microsoft.EntityFrameworkCore.Design
+Adım 1: Core Katmanı
+Evrensel, hiçbir iş veya veri katmanına bağımlı olmayan çekirdek yapıların kodlanması:
+
+Marker Interface'ler:
+Core/Entities/IEntity.cs: Veritabanı tablolarını temsil eden sınıfların imza arayüzü.
+Core/Entities/IDto.cs: Veri taşıma nesnelerini (DTO) temsil eden sınıfların imza arayüzü.
+Generic Repository Altyapısı:
+Core/DataAccess/IEntityRepository.cs: T : class, IEntity, new() kısıtıyla Get, GetAll, Add, Update, Delete CRUD imzaları.
+Core/DataAccess/EntityFramework/EfEntityRepositoryBase.cs: Entity Framework Core kullanarak generic CRUD operasyonlarını gerçekleştiren temel sınıf.
+Result / Sonuç Döndürme Deseni:
+IResult.cs: Success, Message
+IDataResult.cs: IResult'tan kalıtım alır ve generic Data içerir.
+Result.cs, DataResult.cs: Temel implementasyonlar.
+SuccessResult.cs, ErrorResult.cs: Başarılı/Başarısız işlemler için hazır sınıflar.
+SuccessDataResult.cs, ErrorDataResult.cs: Veri taşıyan Başarılı/Başarısız sonuç sınıfları.
+Adım 2: Entities Katmanı
+Veritabanı varlıkları ve API iletişiminde kullanılacak DTO modellerinin tanımlanması:
+
+Veritabanı Entity'leri (Entities/Concrete/):
+Conversation.cs: Id, Title, CreatedAt, Messages (ICollection). IEntity uygular.
+Message.cs: Id, ConversationId, Sender, Content, SentAt, Conversation navigation property. IEntity uygular.
+Data Transfer Objects (Entities/DTOs/):
+CreateConversationRequest.cs: Yeni sohbet açma isteği (Title).
+ConversationSummaryResponse.cs: Sohbet listeleme özeti (Id, Title, CreatedAt).
+ConversationDetailResponse.cs: Sohbet detay yanıtı (Id, Title, CreatedAt, MessageCount, Participants).
+SendMessageRequest.cs: Mesaj gönderme isteği (Sender, Content).
+MessageResponse.cs: Mesaj yanıtı (Id, ConversationId, Sender, Content, SentAt).
+Adım 3: DataAccess Katmanı
+Veritabanı bağlantısı, ORM yapılandırması ve veri erişim sınıflarının yazılması:
+
+Soyut Veri Erişim Arayüzleri (DataAccess/Abstract/):
+IConversationDal.cs: IEntityRepository<Conversation> extend eder.
+IMessageDal.cs: IEntityRepository<Message> extend eder.
+Entity Framework & PostgreSQL Yapılandırması (DataAccess/Concrete/EntityFramework/):
+AppDbContext.cs:
+DbSet<Conversation> Conversations { get; set; }
+DbSet<Message> Messages { get; set; }
+OnModelCreating: Tablo isimleri, birincil anahtarlar, yabancı anahtarlar (Conversation-Message ilişkisi: 1-N, Cascade silme), alan uzunlukları ve zorunlulukları (Title max 200, Sender max 100, Content max 2000 vb.).
+EfConversationDal.cs: EfEntityRepositoryBase<Conversation, AppDbContext>, IConversationDal implementasyonu.
+EfMessageDal.cs: EfEntityRepositoryBase<Message, AppDbContext>, IMessageDal implementasyonu.
+Bağlantı Dizesi (Connection String):
+MessagingApp.Api/appsettings.json dosyasına PostgreSQL connection string yapılandırması (Host=localhost;Port=5432;Database=messagingapp_db;Username=postgres;Password=...).
+Tasks.txt Güncellemesi:
+Tasks.txt dosyasındaki Adım 0, 1, 2 ve 3 maddeleri [x] olarak işaretlenecektir.
+Türkçe Yorum Satırları Standardı
+Her sınıf ve arayüz dosyasına:
+
+Sınıfın başında Amacı, Hangi Deseni/Katmanı Temsil Ettiği, Neden Kullanıldığı hakkında açıklayıcı blok yorum (/// <summary> veya //).
+Property ve method başlarında ne işe yaradıklarını anlatan kısa ve net açıklamalar eklenecektir.
+Doğrulama Planı
+Derleme (Build) Doğrulaması
+Tüm projeler bağımlılıklarıyla birlikte derlenecektir:
+powershell
+
+dotnet build
+Hiçbir derleme hatası veya eksik referans kalmadığı doğrulanacaktır.

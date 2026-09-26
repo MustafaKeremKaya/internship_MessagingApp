@@ -1,0 +1,197 @@
+# Staj Assignment 1: Basit Mesajlaşma Uygulaması
+
+
+
+## Amaç
+
+
+
+Bu ödevde ASP.NET Web API kullanarak basit bir mesajlaşma servisi geliştireceksiniz. Aynı zamanda bu servise terminalden bağlanan bir **console client** yazacaksınız.
+
+
+
+Ödev **bireysel** olarak yapılacaktır. Her stajyer aynı spesifikasyona göre kendi backend'ini ve kendi console client'ını yazacak. Sonrasında ürünler karşılaştırılacaktır.
+
+
+
+Bu doküman **ne yapılması gerektiğini** tanımlar, **nasıl yapılacağını** tanımlamaz. Teknik kararların çoğu size bırakılmıştır.
+
+
+
+---
+
+
+
+## Genel Mimari
+
+
+
+- Bir adet Web **API uygulaması** ve bir adet **console (terminal) uygulaması** yazacaksınız.
+
+- Veritabanı olarak PostgreSQL kullanılacaktır.
+
+- Veriler kalıcı olacak (in-memory değil).
+
+- Gerçek zamanlı iletişim (SignalR, WebSocket vb.) kullanılmayacak. Yeni mesajları görebilmek için client tarafında **polling** (belirli aralıklarla sunucuyu kontrol etme) yapılacak.
+
+- Kullanıcı girişi / authentication yok. Kullanıcı, uygulamayı açtığında bir isim girer ve mesajlar bu isimle gönderilir.
+
+
+
+---
+
+
+
+## Veri Modeli
+
+
+
+Aşağıdaki iki kavram üzerinden ilerleyeceksiniz. Alan tiplerini ve ek alan ihtiyacı olup olmadığını (id, tarih vb. dahil) kendiniz belirleyeceksiniz.
+
+
+
+### Sohbet (Conversation)
+
+
+
+Alanlar en az şunları içermelidir:
+
+
+
+- id
+
+- title
+
+- oluşturulma zamanı
+
+
+
+### Mesaj (Message)
+
+
+
+Alanlar en az şunları içermelidir:
+
+
+
+- id
+
+- ilişkili olduğu sohbetin id'si
+
+- gönderen
+
+- içerik
+
+- gönderilme zamanı
+
+
+
+Veritabanı şemasını, alan tiplerini ve ilişkileri kendiniz tasarlayacaksınız.
+
+
+
+---
+
+
+
+## Gerekli Endpoint'ler
+
+
+
+Aşağıdaki işlevleri sağlayan endpoint'leri kendi route/method tasarımınızla oluşturun:
+
+
+
+1. Yeni bir sohbet oluşturma
+
+2. Tüm sohbetleri listeleme
+
+3. Belirli bir sohbetin detayını getirme (kaç mesaj var, kimler konuşmuş vb.)
+
+4. Belirli bir sohbete ait mesajları listeleme
+
+5. Belirli bir sohbete mesaj gönderme
+
+
+
+Endpoint isimlendirmesi, HTTP metodları, route yapısı ve status code kullanımı size bırakılmıştır. REST prensiplerine mümkün olduğunca uymanız beklenir.
+
+
+
+---
+
+
+
+## DTO Kullanımı
+
+
+
+Entity'lerinizi doğrudan API üzerinden dışarı vermeyin/almayın. Request ve response için ayrı DTO yapıları tasarlamanız gerekiyor.
+
+
+
+DTO'ların ne olduğunu, neden kullanıldığını ve nasıl modellenmesi gerektiğini araştırmanız ve kendi kararınızla uygulamanız beklenmektedir.
+
+
+
+---
+
+
+
+## Console Client Gereksinimleri
+
+
+
+Terminalden çalışan ayrı bir uygulama yazacaksınız. Bu uygulama:
+
+
+
+- Açılışta kullanıcıdan bir isim alacak (mesaj gönderirken kullanılacak).
+
+- Sohbetleri listeleme ve yeni sohbet oluşturma imkanı sunacak.
+
+- Bir sohbete girildiğinde geçmiş mesajları gösterecek.
+
+- Belirli aralıklarla sunucuyu kontrol ederek yeni mesajları terminalde gösterecek (polling).
+
+- Kullanıcının mesaj yazıp gönderebilmesini sağlayacak.
+
+
+
+Arayüz tasarımı, polling sıklığı ve kullanıcı akışı size bırakılmıştır.
+
+
+
+---
+
+
+
+## Beklentiler
+
+
+
+- Kod organizasyonu (katmanlama, sorumlulukların ayrılması)
+
+- Hata durumlarının uygun şekilde ele alınması (örn. var olmayan bir sohbete işlem yapılmaya çalışıldığında bunu hem önyüz uygulamasında hem arka yüz uygulamasında kontrol etmelisiniz)
+
+- Validasyon (örn. boş mesaj gönderilebiliyor mu?)
+
+- PostgreSQL bağlantısının ve şema yönetiminin düzgün kurulması
+
+- Çalışan, uçtan uca test edilebilir bir sistem
+
+- Bir bilgisayarda backend (WebApi) çalışırken aynı bilgisayardan bir adet ve başka bi bilgisayardan bir adet olmak üzere iki client console uygulamasıyla sunucuya bağlanıp iki bilgisayarı birbiriyle mesajlaştırabilmelisiniz (yerel ağda çalışması yeterli, dünya geneli çalışırsa ek puan)
+
+
+
+---
+
+
+
+## Teslim
+
+
+
+- Backend ve console client için ayrı ayrı çalıştırma talimatı (README) hazırlayın.
+
+- Kodunuzu bir repo üzerinden paylaşın.
