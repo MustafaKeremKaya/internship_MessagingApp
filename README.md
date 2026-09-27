@@ -1,8 +1,8 @@
 # Staj Projesi: Basit Mesajlaşma Uygulaması
 
-Bu proje, staj kapsamında geliştirilen katmanlı mimariye sahip bir **ASP.NET Core Web API** ve bu servise terminalden bağlanan **Console Client (Terminal İstemcisi)** uygulamasıdır.
+Bu proje, staj kapsamında geliştirilen katmanlı mimariye sahip bir **ASP.NET Core Web API** ve bu servise terminalden bağlanan **Console Client** uygulamasıdır.
 
-Uygulama, verilerin kalıcı olarak PostgreSQL veritabanında saklandığı, istemci tarafında polling (periyodik sorgulama) yöntemiyle canlı iletişimin sağlandığı ve yerel ağda (LAN) çoklu istemci desteği sunan bir mesajlaşma sistemidir.
+Uygulama, verilerin kalıcı olarak PostgreSQL veritabanında saklandığı, istemci tarafında polling yöntemiyle canlı iletişimin sağlandığı ve yerel ağda çoklu istemci desteği sunan bir mesajlaşma sistemidir.
 
 ---
 
