@@ -1,15 +1,7 @@
 <Solution>
   <Folder Name="/Documentations/">
-    <File Path="Documentations/AssignmentInstructions.txt" />
-    <File Path="Documentations/Plan.txt" />
-    <File Path="Documentations/Tasks.txt" />
-    <File Path="Documentations/Tasks_insani.txt" />
-  </Folder>
-  <Folder Name="/NewDocumentations/">
-    <File Path="NewDocumentations/NewAssignmentInstructions.txt" />
-    <File Path="NewDocumentations/NewPlan.txt" />
-    <File Path="NewDocumentations/NewTasks.txt" />
-    <File Path="NewDocumentations/NewTasks_insani.txt" />
+    <File Path="Documentations/Assignment_Instructions.txt" />
+    <File Path="Documentations/Taskss.txt" />
   </Folder>
   <Project Path="MessagingApp.Api/MessagingApp.Api.csproj" />
   <Project Path="MessagingApp.Business/MessagingApp.Business.csproj" />
